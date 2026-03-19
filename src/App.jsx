@@ -161,7 +161,7 @@ function AdminPanel({ config, setConfig, onLaunchDemo, conversations, activeTab,
   const removeFaq = (i) => setConfig((prev) => ({ ...prev, faqs: prev.faqs.filter((_, idx) => idx !== i) }));
 
   useEffect(() => {
-    fetch("http://localhost:3001/api/health").then((r) => r.json()).then((d) => setServerOk(d.hasKey)).catch(() => setServerOk(false));
+    fetch("/api/health").then((r) => r.json()).then((d) => setServerOk(d.hasKey)).catch(() => setServerOk(false));
   }, []);
 
   const rgb = hexToRgb(config.brandColor);
@@ -324,7 +324,7 @@ function ChatWidget({ config, onBack, onSaveConversation }) {
 
       const history = [...messages.filter((m) => m.content !== config.welcomeMessage), userMsg].map((m) => ({ role: m.role, content: m.content }));
 
-      const response = await fetch("http://localhost:3001/api/chat", {
+      const response = await fetch("/api/chat", {
         method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ model: "claude-sonnet-4-20250514", max_tokens: 1000, system: systemPrompt, messages: history }),
       });
