@@ -305,12 +305,42 @@ function ChatWidget({ config, onBack, onSaveConversation }) {
     onBack();
   };
 
-  const handleEscalation = () => {
+  const handleEscalation = async () => {
     setEscalated(true); setEscalationSent(true); setShowEscalation(false);
     setMessages((prev) => [...prev, {
       role: "assistant",
-      content: `I've forwarded your conversation to our support team at ${config.escalationEmail}. ${customerEmail ? `We'll follow up at ${customerEmail}.` : ""} A human agent will get back to you within 24 hours.`
+      content: `I'm sending your conversation to our support team now...`
     }]);
+
+    try {
+      const res = await fetch("/api/escalate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          customerEmail,
+          businessName: config.businessName,
+          agentName: config.agentName,
+          escalationEmail: config.escalationEmail,
+          messages,
+        }),
+      });
+      const data = await res.json();
+
+      const channels = [];
+      if (data.telegram) channels.push("Telegram");
+      if (data.email) channels.push("email");
+
+      const confirmMsg = channels.length > 0
+        ? `Done! Your conversation has been sent to our team via ${channels.join(" and ")}. ${customerEmail ? `We'll follow up at ${customerEmail}.` : ""} A human agent will get back to you within 24 hours.`
+        : `I've logged your request. Our team at ${config.escalationEmail} will follow up within 24 hours.${customerEmail ? ` We'll reach you at ${customerEmail}.` : ""}`;
+
+      setMessages((prev) => [...prev.slice(0, -1), { role: "assistant", content: confirmMsg }]);
+    } catch (err) {
+      setMessages((prev) => [...prev.slice(0, -1), {
+        role: "assistant",
+        content: `I've logged your request. Our team at ${config.escalationEmail} will follow up within 24 hours.${customerEmail ? ` We'll reach you at ${customerEmail}.` : ""}`
+      }]);
+    }
   };
 
   const sendMessage = useCallback(async (text) => {
